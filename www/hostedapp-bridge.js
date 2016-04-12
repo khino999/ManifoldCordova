@@ -39,12 +39,6 @@
                 });
             }
 
-            // change bridge mode in iOS to avoid Content Security Policy (CSP) issues with 'gap://' frame origin
-            if (platform === 'ios') {
-                var exec = cordova.require('cordova/exec');
-                exec.setJsToNativeBridgeMode(exec.jsToNativeModes.XHR_OPTIONAL_PAYLOAD);
-            }
-
             // override plugin loader to handle script injection
             var pluginloader = cordova.require('cordova/pluginloader');
             var defaultInjectScript = pluginloader.injectScript;

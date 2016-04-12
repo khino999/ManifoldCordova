@@ -92,8 +92,13 @@ static NSString * const defaultManifestFileName = @"manifest.json";
 
     // set the webview delegate to notify navigation events
     notificationDelegate = [[CVDWebViewNotificationDelegate alloc] init];
+#ifdef __CORDOVA_4_0_0
+    notificationDelegate.wrappedDelegate = ((UIWebView *)self.webViewEngine.engineWebView).delegate;
+    [(UIWebView *)self.webViewEngine.engineWebView setDelegate:notificationDelegate];
+#else
     notificationDelegate.wrappedDelegate = self.webView.delegate;
     [self.webView setDelegate:notificationDelegate];
+#endif
 }
 
 // loads the specified W3C manifest
@@ -215,8 +220,11 @@ static NSString * const defaultManifestFileName = @"manifest.json";
             NSLog(@"ERROR failed to load script file: '%@'", scriptName);
         }
     }
-    
+#ifdef __CORDOVA_4_0_0
+    return[(UIWebView *)self.webViewEngine.engineWebView stringByEvaluatingJavaScriptFromString:content] != nil;
+#else
     return[self.webView stringByEvaluatingJavaScriptFromString:content] != nil;
+#endif
 }
 
 - (BOOL) isCordovaEnabled
@@ -299,7 +307,11 @@ static NSString * const defaultManifestFileName = @"manifest.json";
         if (match != nil)
         {
             CDVWhitelist *whitelist = [[CDVWhitelist alloc] initWithArray:match];
+#ifdef __CORDOVA_4_0_0
+            NSURL* url = ((UIWebView *)self.webViewEngine.engineWebView).request.URL;
+#else
             NSURL* url = self.webView.request.URL;
+#endif
             isURLMatch = [whitelist URLIsAllowed:url];
         }
     }
@@ -311,9 +323,13 @@ static NSString * const defaultManifestFileName = @"manifest.json";
 // be made visible whenever network connectivity is lost.
 - (void)createOfflineView
 {
+#ifdef __CORDOVA_4_0_0
+    CGRect webViewBounds = self.webViewEngine.engineWebView.bounds;
+    webViewBounds.origin = self.webViewEngine.engineWebView.bounds.origin;
+#else
     CGRect webViewBounds = self.webView.bounds;
-
     webViewBounds.origin = self.webView.bounds.origin;
+#endif
 
     self.offlineView = [[UIWebView alloc] initWithFrame:webViewBounds];
     self.offlineView.autoresizingMask = (UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight);
@@ -337,8 +353,11 @@ static NSString * const defaultManifestFileName = @"manifest.json";
             loadHTMLString:[NSString stringWithFormat:offlinePageTemplate, @"It looks like you are offline. Please reconnect to use this application."]
             baseURL:nil];
     }
-
+#ifdef __CORDOVA_4_0_0
+    [self.viewController.view sendSubviewToBack:self.webViewEngine.engineWebView];
+#else
     [self.viewController.view sendSubviewToBack:self.webView];
+#endif
 }
 
 // Handles notifications from the network-information plugin and shows the offline page whenever
@@ -356,7 +375,11 @@ static NSString * const defaultManifestFileName = @"manifest.json";
                 }
                 else {
                     if (self.failedURL) {
+#ifdef __CORDOVA_4_0_0
+                        [(UIWebView *)self.webViewEngine.engineWebView loadRequest: [NSURLRequest requestWithURL: self.failedURL]];
+#else
                         [self.webView loadRequest: [NSURLRequest requestWithURL: self.failedURL]];
+#endif
                     }
                     else {
                         [self.offlineView setHidden:YES];
@@ -412,7 +435,11 @@ static NSString * const defaultManifestFileName = @"manifest.json";
             }
             
             NSString* javascript = [NSString stringWithFormat:@"window.hostedWebApp = { 'platform': '%@', 'pluginMode': '%@', 'cordovaBaseUrl': '%@'};", IOS_PLATFORM, pluginMode, cordovaBaseUrl];
+#ifdef __CORDOVA_4_0_0
+            [(UIWebView *)self.webViewEngine.engineWebView stringByEvaluatingJavaScriptFromString:javascript];
+#else
             [self.webView stringByEvaluatingJavaScriptFromString:javascript];
+#endif
             
             NSMutableArray* scripts = [[NSMutableArray alloc] init];
             if ([pluginMode isEqualToString:@"client"])
@@ -477,11 +504,18 @@ static NSString * const defaultManifestFileName = @"manifest.json";
         if ([[UIApplication sharedApplication] canOpenURL:url])
         {
             [[UIApplication sharedApplication] openURL:url]; // opens the URL outside the webview
+#ifdef __CORDOVA_4_0_0
+            return NO;
+#else
             return YES;
+#endif
         }
     }
-    
+#ifdef __CORDOVA_4_0_0
+    return YES;
+#else
     return NO;
+#endif
 }
 
 -(BOOL) shouldAllowNavigation:(NSURL*) url
